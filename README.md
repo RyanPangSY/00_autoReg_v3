@@ -25,11 +25,11 @@ Copy-Item data\userInfo.example.txt data\userInfo.txt
 `userInfo.txt` is git-ignored (it contains personal data). Format:
 
 ```text
-Last Name: Pang
-First Name: Ryan
-Phone Number: 61389189
-Email: roboconwaterjet@gmail.com
-Content: Robocon
+Last Name: Chan
+First Name: Peter
+Phone Number: 12345678
+Email: your_email@email.com
+Content: Purpose
 ```
 
 Optional keys: `Project` (must match an option of the Q5 dropdown, defaults
