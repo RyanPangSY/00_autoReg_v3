@@ -512,13 +512,24 @@ def format_results(results, dry_run=False):
 
 # -- CLI ----------------------------------------------------------------------
 
-def parse_date(yymmdd):
-    """'YYMMDD' -> datetime.date, e.g. '260815' -> 2026-08-15."""
-    s = yymmdd.strip()
-    if len(s) != 6 or not s.isdigit():
-        raise BookingError(f"invalid date {yymmdd!r} (expected YYMMDD)")
-    year, month, day = 2000 + int(s[0:2]), int(s[2:4]), int(s[4:6])
-    return date(year, month, day)
+def parse_date(value):
+    """Accept 'YYMMDD', 'YYYYMMDD' or 'YYYY-MM-DD' -> datetime.date.
+
+    e.g. '260815' or '2026-08-15' -> 2026-08-15.
+    """
+    s = str(value).strip()
+    if "-" in s:
+        s = s.replace("-", "")
+    if len(s) == 6 and s.isdigit():
+        year, month, day = 2000 + int(s[0:2]), int(s[2:4]), int(s[4:6])
+    elif len(s) == 8 and s.isdigit():
+        year, month, day = int(s[0:4]), int(s[4:6]), int(s[6:8])
+    else:
+        raise BookingError(f"invalid date {value!r} (expected YYMMDD or YYYY-MM-DD)")
+    try:
+        return date(year, month, day)
+    except ValueError as e:
+        raise BookingError(f"invalid date {value!r}: {e}") from e
 
 
 def cli_book(user_info, fingerprint_path=None, dry_run=False, debug=False,
