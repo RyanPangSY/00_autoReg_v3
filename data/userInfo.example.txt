@@ -1,0 +1,7 @@
+Last Name: Doe
+First Name: John
+Phone Number: 12345678
+Email: john.doe@example.com
+Content: Robocon
+# Project: SIG - HKU Robocon (Supervisor: Dr. H.H. Cheung, IMSE)
+# Member Information:

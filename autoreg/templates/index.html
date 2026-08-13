@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<title>AutoReg v3 - Inno Wing Booking</title>
+<style>
+  :root {
+    --bg: #f4f5f4; --card: #ffffff; --border: #e1e5e1;
+    --text: #0c0f0c; --muted: #696b69;
+    --accent: #0FA95E; --accent-dark: #0c8c4d; --accent-bg: #e4f5e7;
+    --blue: #3374E0; --sel: #3374E0; --sel-bg: #e2ecfa;
+    --danger: #D42F3B; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex; justify-content: center; padding: 24px 12px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    width: 100%; max-width: 560px; padding: 24px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+  /* equipment */
+  .equipment { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+    transition: all .15s; user-select: none;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* calendar */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-title { font-size: 15px; font-weight: 600; }
+  .nav-btn {
+    border: 1px solid var(--border); background: #fff; border-radius: 8px;
+    padding: 5px 12px; cursor: pointer; font-size: 13px;
+  }
+  .nav-btn:disabled { opacity: .35; cursor: default; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dow { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
+  .day {
+    aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-size: 14px; cursor: default;
+    background: #eef0ee; color: var(--muted); border: 2px solid transparent;
+  }
+  .day.avail {
+    background: var(--accent-bg); color: var(--accent-dark); cursor: pointer;
+    font-weight: 600; border-color: transparent;
+  }
+  .day.avail:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .day.sel { background: var(--sel); color: #fff; border-color: var(--sel); }
+  .day.today { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .count { font-size: 10px; font-weight: 400; opacity: .8; }
+  .legend { font-size: 12px; color: var(--muted); margin: 10px 2px 0; display: flex; gap: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* options + actions */
+  .options { margin: 16px 0 8px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+  .selected { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 14px; }
+  .actions { display: flex; gap: 10px; }
+  button.primary {
+    flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s;
+  }
+  button.primary:hover { background: var(--accent-dark); }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  button.ghost {
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    border-radius: 10px; padding: 12px 18px; font-size: 14px; cursor: pointer;
+  }
+  button.ghost:disabled { opacity: .5; cursor: default; }
+
+  /* status log */
+  .status { margin-top: 18px; }
+  .status-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .bar { height: 6px; background: #eef0ee; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+  .log {
+    background: #fafbfa; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px; line-height: 1.6; max-height: 220px; overflow-y: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .log .ok { color: var(--accent-dark); }
+  .log .fail { color: var(--danger); }
+  .log .dim { color: var(--muted); }
+  .error-banner {
+    background: #ffe9e9; color: var(--danger); border-radius: 10px; padding: 10px 12px;
+    font-size: 13px; margin-bottom: 14px; display: none;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>AutoReg v3</h1>
+  <div class="sub">Inno Wing machine room · YouCanBook.me API booking</div>
+
+  <div id="error" class="error-banner"></div>
+  <div class="equipment" id="equipment"></div>
+
+  <div class="cal-head">
+    <button class="nav-btn" id="prevBtn">&larr; Prev</button>
+    <span class="cal-title" id="calTitle"></span>
+    <button class="nav-btn" id="nextBtn">Next &rarr;</button>
+  </div>
+  <div class="grid" id="calendar"></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span> Available (slot count)</span>
+    <span><span class="dot" style="background:#eef0ee"></span> Unavailable</span>
+  </div>
+
+  <div class="options">
+    <label class="check"><input type="checkbox" id="allSlots"> Book ALL available slots per date</label>
+  </div>
+  <div class="selected" id="selectedText">Selected dates: none</div>
+
+  <div class="actions">
+    <button class="primary" id="registerBtn" disabled>Register</button>
+    <button class="ghost" id="refreshBtn">Refresh</button>
+  </div>
+
+  <div class="status">
+    <div class="status-title" id="statusTitle">Status</div>
+    <div class="bar"><div id="progress"></div></div>
+    <div class="log" id="log"><span class="dim">Ready.</span></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const MONTHS = ["January","February","March","April","May","June","July",
+                "August","September","October","November","December"];
+
+let equipment = [];            // [{subdomain, name}]
+let selectedEquipment = null;
+let availability = {};         // {"2026-08-14": {available, slots}}
+let monthKeys = [];            // ["2026-08", ...]
+let monthIndex = 0;
+let selectedDates = new Set();
+let jobTimer = null;
+
+// ---- equipment -------------------------------------------------------------
+
+async function loadEquipment() {
+  try {
+    const resp = await fetch("/api/equipment");
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    equipment = data;
+  } catch (e) {
+    showError("Failed to load equipment: " + e.message);
+    return;
+  }
+  const box = $("equipment");
+  box.innerHTML = "";
+  equipment.forEach((item, i) => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (i === 0 ? " active" : "");
+    chip.textContent = item.name;
+    chip.onclick = () => selectEquipment(item, chip);
+    box.appendChild(chip);
+  });
+  if (equipment.length) selectEquipment(equipment[0], box.firstChild);
+}
+
+function selectEquipment(item, chip) {
+  selectedEquipment = item.subdomain;
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  chip.classList.add("active");
+  selectedDates.clear();
+  loadAvailability();
+}
+
+// ---- availability ----------------------------------------------------------
+
+async function loadAvailability() {
+  if (!selectedEquipment) return;
+  setStatus("Loading availability...", null);
+  try {
+    const resp = await fetch("/api/availability?equipment=" + encodeURIComponent(selectedEquipment));
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    availability = data;
+  } catch (e) {
+    showError("Failed to load availability: " + e.message);
+    return;
+  }
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const months = new Set(Object.keys(availability).map(d => d.slice(0, 7)));
+  months.add(todayKey.slice(0, 7));
+  monthKeys = [...months].sort();
+  monthIndex = monthKeys.indexOf(todayKey.slice(0, 7));
+  if (monthIndex < 0) monthIndex = 0;
+  // drop selections that are no longer available
+  selectedDates.forEach(d => { if (!(availability[d] || {}).available) selectedDates.delete(d); });
+  renderCalendar();
+  updateSelected();
+  setStatus("Availability loaded.");
+}
+
+function renderCalendar() {
+  const [year, month] = monthKeys[monthIndex].split("-").map(Number);
+  $("calTitle").textContent = MONTHS[month - 1] + " " + year;
+  $("prevBtn").disabled = monthIndex === 0;
+  $("nextBtn").disabled = monthIndex === monthKeys.length - 1;
+
+  const grid = $("calendar");
+  grid.innerHTML = "";
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
+    const el = document.createElement("div");
+    el.className = "dow";
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const first = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const startCol = first.getDay();
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  for (let i = 0; i < startCol; i++) grid.appendChild(blank());
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+    const info = availability[key];
+    const el = document.createElement("div");
+    el.className = "day";
+    if (key === todayKey) el.classList.add("today");
+    if (info && info.available) {
+      el.classList.add("avail");
+      el.innerHTML = day + (info.slots > 1 ? `<span class="count">${info.slots}</span>` : "");
+      el.title = info.slots + " free slot(s)";
+      el.onclick = () => toggleDate(key, el);
+      if (selectedDates.has(key)) el.classList.add("sel");
+    } else {
+      el.textContent = day;
+    }
+    grid.appendChild(el);
+  }
+}
+
+function blank() {
+  const el = document.createElement("div");
+  el.className = "day";
+  el.style.visibility = "hidden";
+  return el;
+}
+
+function toggleDate(key, el) {
+  if (selectedDates.has(key)) {
+    selectedDates.delete(key);
+    el.classList.remove("sel");
+  } else {
+    selectedDates.add(key);
+    el.classList.add("sel");
+  }
+  updateSelected();
+}
+
+function updateSelected() {
+  const list = [...selectedDates].sort();
+  $("selectedText").textContent = list.length
+    ? "Selected dates: " + list.join(", ")
+    : "Selected dates: none";
+  $("registerBtn").disabled = list.length === 0 || jobRunning();
+}
+
+// ---- register --------------------------------------------------------------
+
+function jobRunning() {
+  return $("registerBtn").dataset.running === "1";
+}
+
+async function register() {
+  if (jobRunning()) return;
+  const dates = [...selectedDates].sort();
+  if (!dates.length) return;
+  setStatus("Starting registration...", 0);
+  try {
+    const resp = await fetch("/api/register", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        equipment: selectedEquipment,
+        dates: dates,
+        all_slots: $("allSlots").checked,
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    $("registerBtn").dataset.running = "1";
+    $("registerBtn").disabled = true;
+    $("registerBtn").textContent = "Registering...";
+    appendLog("Registration started (job " + data.job_id + ").", "dim");
+    pollJob(data.job_id);
+  } catch (e) {
+    showError(e.message);
+    setStatus(null);
+  }
+}
+
+async function pollJob(jobId) {
+  try {
+    const resp = await fetch("/api/status/" + jobId);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const pct = data.total ? Math.round(data.done / data.total * 100) : 100;
+    setStatus("Job " + jobId + ": " + data.done + "/" + data.total + " date(s)", pct);
+    renderLog(data.lines);
+    if (data.state === "running") {
+      jobTimer = setTimeout(() => pollJob(jobId), 800);
+    } else {
+      $("registerBtn").dataset.running = "";
+      $("registerBtn").textContent = "Register";
+      $("registerBtn").disabled = selectedDates.size === 0;
+      setStatus("Done: " + data.done + "/" + data.total + " date(s) processed.", 100);
+    }
+  } catch (e) {
+    $("registerBtn").dataset.running = "";
+    $("registerBtn").textContent = "Register";
+    showError("Status error: " + e.message);
+  }
+}
+
+// ---- status/log --------------------------------------------------------------
+
+function setStatus(text, pct) {
+  const t = $("statusTitle");
+  if (text) t.textContent = "Status: " + text;
+  if (pct !== null && pct !== undefined) $("progress").style.width = pct + "%";
+}
+
+function appendLog(text, cls) {
+  const log = $("log");
+  const span = document.createElement("span");
+  span.className = cls || "";
+  span.textContent = text + "\n";
+  log.appendChild(span);
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderLog(lines) {
+  const log = $("log");
+  log.innerHTML = "";
+  lines.forEach(line => {
+    const span = document.createElement("span");
+    if (/BOOKED/.test(line)) span.className = "ok";
+    else if (/: (Failed|ERROR|error)/.test(line) || /FAILED/.test(line)) span.className = "fail";
+    else span.className = "dim";
+    span.textContent = line + "\n";
+    log.appendChild(span);
+  });
+  log.scrollTop = log.scrollHeight;
+}
+
+function showError(msg) {
+  const el = $("error");
+  el.textContent = msg;
+  el.style.display = "block";
+  setTimeout(() => { el.style.display = "none"; }, 6000);
+}
+
+// ---- boot --------------------------------------------------------------------
+
+$("prevBtn").onclick = () => { if (monthIndex > 0) { monthIndex--; renderCalendar(); } };
+$("nextBtn").onclick = () => { if (monthIndex < monthKeys.length - 1) { monthIndex++; renderCalendar(); } };
+$("refreshBtn").onclick = loadAvailability;
+$("registerBtn").onclick = register;
+$("allSlots").addEventListener("change", updateSelected);
+
+loadEquipment();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+flask>=3.0
+requests>=2.31
+selenium>=4.6
+# BypassV3 (vendored reCAPTCHA v3/Enterprise token client) needs only `requests`
+# for bypass.py; blackboxprotobuf is only used by its tools/ scripts.
+# `selenium` is needed for browser-minted tokens (--token-method browser/auto).
+# Selenium 4.6+ manages chromedriver itself.
+# Install with:  python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
