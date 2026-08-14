@@ -2,3 +2,8 @@
 __pycache__/
 *.pyc
 data/userInfo.txt
+data/users.json
+data/secret.key
+data/autoreg.db
+data/server.pid
+data/autoreg.log

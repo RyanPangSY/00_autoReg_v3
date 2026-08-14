@@ -26,6 +26,12 @@
   }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .topbar .sub { margin-bottom: 12px; }
+  .userbox { font-size: 13px; color: var(--muted); text-align: right; }
+  .userbox #userName { font-weight: 600; color: var(--text); display: block; }
+  .userbox a { color: var(--blue); text-decoration: none; font-size: 12px; }
+  .userbox a:hover { text-decoration: underline; }
 
   /* equipment */
   .equipment { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -103,8 +109,16 @@
 </head>
 <body>
 <div class="card">
-  <h1>AutoReg v3</h1>
-  <div class="sub">Inno Wing machine room · YouCanBook.me API booking</div>
+  <div class="topbar">
+    <div>
+      <h1>AutoReg v3</h1>
+      <div class="sub">Inno Wing machine room · YouCanBook.me API booking</div>
+    </div>
+    <div class="userbox">
+      <span id="userName"></span>
+      <a href="/logout" id="logoutLink">Logout</a>
+    </div>
+  </div>
 
   <div id="error" class="error-banner"></div>
   <div class="equipment" id="equipment"></div>
@@ -135,6 +149,11 @@
     <div class="bar"><div id="progress"></div></div>
     <div class="log" id="log"><span class="dim">Ready.</span></div>
   </div>
+
+  <div class="status" id="statsPanel" style="display:none">
+    <div class="status-title">My bookings</div>
+    <div id="statsBody" style="font-size:13px;color:var(--muted)"></div>
+  </div>
 </div>
 
 <script>
@@ -156,6 +175,7 @@ let jobTimer = null;
 async function loadEquipment() {
   try {
     const resp = await fetch("/api/equipment");
+    if (resp.status === 401) { window.location = "/login"; return; }
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     equipment = data;
@@ -190,6 +210,7 @@ async function loadAvailability() {
   setStatus("Loading availability...", null);
   try {
     const resp = await fetch("/api/availability?equipment=" + encodeURIComponent(selectedEquipment));
+    if (resp.status === 401) { window.location = "/login"; return; }
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     availability = data;
@@ -298,6 +319,7 @@ async function register() {
         all_slots: $("allSlots").checked,
       }),
     });
+    if (resp.status === 401) { window.location = "/login"; return; }
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     $("registerBtn").dataset.running = "1";
@@ -326,6 +348,7 @@ async function pollJob(jobId) {
       $("registerBtn").textContent = "Register";
       $("registerBtn").disabled = selectedDates.size === 0;
       setStatus("Done: " + data.done + "/" + data.total + " date(s) processed.", 100);
+      loadMe();
     }
   } catch (e) {
     $("registerBtn").dataset.running = "";
@@ -380,6 +403,38 @@ $("refreshBtn").onclick = loadAvailability;
 $("registerBtn").onclick = register;
 $("allSlots").addEventListener("change", updateSelected);
 
+async function loadMe() {
+  try {
+    const resp = await fetch("/api/me");
+    if (resp.status === 401) { window.location = "/login"; return; }
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    $("userName").textContent = data.username + (data.is_admin ? " (admin)" : "");
+    renderStats(data.stats);
+  } catch (e) {
+    showError("Failed to load user: " + e.message);
+  }
+}
+
+function renderStats(stats) {
+  const panel = $("statsPanel");
+  const body = $("statsBody");
+  if (!stats) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  let html = `<b>${stats.distinct_days}</b> day(s) booked · <b>${stats.bookings}</b> total booking(s)`;
+  const machines = Object.entries(stats.by_machine || {});
+  if (machines.length) {
+    html += "<br>Per machine: " + machines.map(([m, n]) => `${m}: ${n}`).join(", ");
+  }
+  if ((stats.recent || []).length) {
+    html += "<br>Recent: " + stats.recent.slice(0, 5)
+      .map(r => `${r.slot_start ? r.slot_start.slice(0, 16).replace("T", " ") : "?"} ${r.status}`)
+      .join(" · ");
+  }
+  body.innerHTML = html;
+}
+
+loadMe();
 loadEquipment();
 </script>
 </body>

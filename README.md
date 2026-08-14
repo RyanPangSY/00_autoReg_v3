@@ -1,9 +1,9 @@
 # AutoReg v3 - Inno Wing Machine Room Booking Bot
 
-Browserless booking bot for the HKU Inno Wing machine room
-(YouCanBook.me). Automates the **CNC milling machine**, **Water jet cutting
-machine** and **Lathe machine** booking pages via their public API - no
-Selenium-driven page automation for the booking itself.
+Browserless booking bot for the HKU Inno Wing machine room (YouCanBook.me).
+Automates the **CNC milling machine**, **Water jet cutting machine** and
+**Lathe machine** booking pages via their public API - no Selenium-driven
+page automation for the booking itself.
 
 The only browser used is a short-lived Chrome window that mints the
 reCAPTCHA Enterprise token (a plain HTTP token gets a too-low score and the
@@ -16,24 +16,24 @@ python -m venv .venv
 .\.venv\Scripts\pip install -r requirements.txt
 ```
 
-Then copy the user details template and fill in your own:
+## Accounts
 
-```powershell
-Copy-Item data\userInfo.example.txt data\userInfo.txt
-```
+Every user has their own account with their own booking details (name,
+phone, email, project, ...). The **first registered user becomes the admin**.
 
-`userInfo.txt` is git-ignored (it contains personal data). Format:
+* **On the web**: open `http://127.0.0.1:5000/register` and fill the form.
+  If the store is empty the form is pre-filled from the old
+  `data/userInfo.txt` (if present).
+* **From the terminal** (same thing):
 
-```text
-Last Name: Chan
-First Name: Peter
-Phone Number: 12345678
-Email: your_email@email.com
-Content: Purpose
-```
+  ```powershell
+  .\.venv\Scripts\python.exe main.py --add-user alice   # prompts for password + details
+  .\.venv\Scripts\python.exe main.py --list-users
+  .\.venv\Scripts\python.exe main.py --set-admin alice
+  .\.venv\Scripts\python.exe main.py --remove-user alice
+  ```
 
-Optional keys: `Project` (must match an option of the Q5 dropdown, defaults
-to the Robocon SIG entry), `Member Information` (optional text field).
+`data/users.json` stores the accounts (git-ignored, passwords hashed).
 
 ## Usage
 
@@ -41,16 +41,34 @@ to the Robocon SIG entry), `Member Information` (optional text field).
 .\.venv\Scripts\python.exe main.py
 ```
 
-Opens the web UI in your browser: pick the machine, click the green days
-(they show the number of free slots), optionally tick "Book ALL available
-slots per date", then Register. Bookings require **at least 1 hour notice**
-and are limited to a **14-day window** (site configuration).
+Opens the web UI in your browser. Log in (or register), pick the machine,
+click the green days (they show the number of free slots), optionally tick
+"Book ALL available slots per date", then Register. Bookings require
+**at least 1 hour notice** and a **14-day window** (site configuration).
 
-### Flags
+While a job runs, the status panel streams per-slot results. Every attempt
+is recorded in `data/autoreg.db` (status BOOKED / FAILED / DRY_RUN), and
+your **"My bookings" panel** shows the number of days and bookings you've
+made. The admin can see everyone's totals at `GET /api/admin/stats` (or
+`main.py --stats` in the terminal).
+
+## Run in the background at every logon
+
+```powershell
+.\.venv\Scripts\python.exe main.py --install-startup
+```
+
+This adds a hidden `AutoReg.vbs` to the Windows Startup folder (no admin
+needed) so the server starts at every logon on port 5000, logging to
+`data/autoreg.log`. A desktop shortcut **AutoReg.url** opens the UI. Remove
+it with `--uninstall-startup`. The pidfile `data/server.pid` prevents a
+second instance from starting.
+
+## Flags
 
 | Flag | Meaning |
 | --- | --- |
-| `--cli` | Terminal flow instead of the web UI |
+| `--cli` | Terminal booking flow instead of the web UI |
 | `--dry-run` | Run everything except the final confirm (no booking) |
 | `--all-slots` | Default to booking every free slot per date |
 | `--token-method {browser,browserless,auto}` | Token minting method (default `browser`) |
@@ -59,6 +77,10 @@ and are limited to a **14-day window** (site configuration).
 | `--port N` | Web UI port (default 5000) |
 | `--no-browser` | Don't auto-open the browser |
 | `-d` | Debug logging |
+| `--add-user`, `--list-users`, `--remove-user`, `--set-admin` | User management |
+| `--stats` | Print per-user booking stats |
+| `--install-startup` / `--uninstall-startup` | Auto-start at logon |
+| `--background` | Hidden background mode (used by the auto-start entry) |
 
 ## How it works
 
@@ -82,10 +104,14 @@ main.py                 entry point (web UI by default, --cli for terminal)
 autoreg/                application package
   booking.py            orchestration: availability, tokens, booking, retries
   youcanbook.py         YouCanBook.me API client (v1 + v2 intents)
-  webui.py              Flask server + job manager
-  templates/index.html  calendar UI (single file, no build step)
+  webui.py              Flask server: auth, job manager, stats API
+  users.py              account store (data/users.json, hashed passwords)
+  stats.py              SQLite booking history + per-user stats
+  templates/            index.html (calendar), login.html, register.html
   static/favicon.ico
-data/                   userInfo.txt (git-ignored) + fingerprint.json
+data/                   userInfo.txt, users.json, autoreg.db, secret.key,
+                        server.pid, autoreg.log (all git-ignored except
+                        fingerprint.json + userInfo.example.txt)
 BypassV3/               vendored reCAPTCHA v3/Enterprise research client
 ```
 

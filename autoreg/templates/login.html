@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<title>Login - AutoReg v3</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f5f4; color: #0c0f0c; font-family: "Inter", "Segoe UI", system-ui, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #fff; border: 1px solid #e1e5e1; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.06); width: 100%; max-width: 380px; padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #696b69; font-size: 13px; margin-bottom: 20px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  input { width: 100%; padding: 10px 12px; border: 1px solid #d6dbd6; border-radius: 8px; font-size: 14px; }
+  input:focus { outline: 2px solid #0FA95E; border-color: #0FA95E; }
+  button { width: 100%; margin-top: 18px; background: #0FA95E; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #0c8c4d; }
+  .error { background: #ffe9e9; color: #D42F3B; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 8px; }
+  .foot { text-align: center; font-size: 13px; margin-top: 16px; color: #696b69; }
+  .foot a { color: #0FA95E; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>AutoReg v3</h1>
+  <div class="sub">Inno Wing machine room booking</div>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label for="username">Username</label>
+    <input id="username" name="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required>
+    <button type="submit">Login</button>
+  </form>
+  <div class="foot">No account? <a href="{{ url_for('register_page') }}">Register</a></div>
+</div>
+</body>
+</html>

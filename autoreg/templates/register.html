@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<title>Register - AutoReg v3</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f5f4; color: #0c0f0c; font-family: "Inter", "Segoe UI", system-ui, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #fff; border: 1px solid #e1e5e1; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.06); width: 100%; max-width: 420px; padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #696b69; font-size: 13px; margin-bottom: 16px; }
+  .note { background: #e4f5e7; color: #0c8c4d; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+  .error { background: #ffe9e9; color: #D42F3B; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  label { display: block; font-size: 12px; font-weight: 600; margin: 10px 0 4px; }
+  input, textarea { width: 100%; padding: 9px 11px; border: 1px solid #d6dbd6; border-radius: 8px; font-size: 14px; font-family: inherit; }
+  input:focus, textarea:focus { outline: 2px solid #0FA95E; border-color: #0FA95E; }
+  textarea { resize: vertical; min-height: 54px; }
+  button { width: 100%; margin-top: 18px; background: #0FA95E; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #0c8c4d; }
+  .foot { text-align: center; font-size: 13px; margin-top: 16px; color: #696b69; }
+  .foot a { color: #0FA95E; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Create account</h1>
+  <div class="sub">Your details are used on every booking you make.</div>
+  {% if is_first_user %}<div class="note">First account on this machine becomes the <b>admin</b>.</div>{% endif %}
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label for="username">Username *</label>
+    <input id="username" name="username" value="{{ prefill.username or '' }}" required autofocus>
+    <label for="password">Password *</label>
+    <input id="password" name="password" type="password" required>
+    <div class="row">
+      <div>
+        <label for="last_name">Last Name *</label>
+        <input id="last_name" name="Last Name" value="{{ prefill.last_name or '' }}" required>
+      </div>
+      <div>
+        <label for="first_name">First Name *</label>
+        <input id="first_name" name="First Name" value="{{ prefill.first_name or '' }}" required>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="phone">Phone Number *</label>
+        <input id="phone" name="Phone Number" value="{{ prefill.phone or '' }}" required>
+      </div>
+      <div>
+        <label for="email">Email *</label>
+        <input id="email" name="Email" value="{{ prefill.email or '' }}" required>
+      </div>
+    </div>
+    <label for="content">Content / Job Description *</label>
+    <textarea id="content" name="Content" required>{{ prefill.content or '' }}</textarea>
+    <label for="project">Project (Q5, optional)</label>
+    <input id="project" name="Project" value="{{ prefill.project or '' }}" placeholder="SIG - HKU Robocon (Supervisor: Dr. H.H. Cheung, IMSE)">
+    <label for="member_info">Member Information (optional)</label>
+    <textarea id="member_info" name="Member Information">{{ prefill.member_info or '' }}</textarea>
+    <button type="submit">Register</button>
+  </form>
+  <div class="foot">Already registered? <a href="{{ url_for('login_page') }}">Login</a></div>
+</div>
+</body>
+</html>
