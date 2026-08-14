@@ -169,10 +169,10 @@ def _install_startup(port):
     os.makedirs(folder, exist_ok=True)
     vbs_path = os.path.join(folder, "AutoReg.vbs")
     vbs = (
-        'Set sh = CreateObject("WScript.Shell")\r\n'
-        f'sh.CurrentDirectory = "{ROOT_DIR}"\r\n'
-        f'sh.Run """"{pythonw}"" main.py --no-browser --port {port} '
-        '--background"", 0, False\r\n'
+        'Set sh = CreateObject("WScript.Shell")\n'
+        f'sh.CurrentDirectory = "{ROOT_DIR}"\n'
+        f'sh.Run """{pythonw}"" main.py --no-browser --port {port} '
+        '--background", 0, False\n'
     )
     with open(vbs_path, "w", encoding="utf-8") as f:
         f.write(vbs)
