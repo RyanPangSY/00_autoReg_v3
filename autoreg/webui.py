@@ -198,14 +198,16 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     if "username" in session:
-        return redirect(url_for("index"))
+        if not app.config["USERS"].user_exists(session["username"]):
+            session.clear()
+        else:
+            return redirect(url_for("index"))
     error = None
     if request.method == "POST":
         username = (request.form.get("username") or "").strip()
         password = request.form.get("password") or ""
         if app.config["USERS"].verify(username, password):
             session["username"] = username
-            session.permanent = True
             return redirect(url_for("index"))
         error = "Invalid username or password."
     return render_template("login.html", error=error)
@@ -232,7 +234,6 @@ def register_page():
                     is_admin=first_user,
                 )
                 session["username"] = (request.form.get("username") or "").strip()
-                session.permanent = True
                 return redirect(url_for("index"))
             except UserExistsError as e:
                 error = str(e)
