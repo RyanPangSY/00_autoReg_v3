@@ -30,48 +30,77 @@ class UserStore:
         self.path = path
         self._lock = threading.Lock()
         self._users = {}
+        self._mtime = None
         self._load()
 
     def _load(self):
         if os.path.exists(self.path):
             with open(self.path, "r", encoding="utf-8") as f:
                 self._users = json.load(f)
+            self._mtime = os.path.getmtime(self.path)
         else:
             self._users = {}
 
     def _save(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with open(self.path, "w", encoding="utf-8") as f:
+        tmp_path = self.path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(self._users, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_path, self.path)
+        self._mtime = os.path.getmtime(self.path)
+
+    def _maybe_reload(self):
+        """Pick up changes written by another process (e.g. CLI user commands
+        run while the web server is up). On a read error, keep the current
+        snapshot and leave the mtime stale so the next query retries."""
+        try:
+            if os.path.exists(self.path) and os.path.getmtime(self.path) != self._mtime:
+                with open(self.path, "r", encoding="utf-8") as f:
+                    self._users = json.load(f)
+                self._mtime = os.path.getmtime(self.path)
+        except (OSError, ValueError):
+            pass
 
     # -- queries --------------------------------------------------------------
 
     def user_exists(self, username):
-        return username in self._users
+        with self._lock:
+            self._maybe_reload()
+            return username in self._users
 
     def list_users(self):
-        return sorted(
-            (u, d.get("is_admin", False)) for u, d in self._users.items()
-        )
+        with self._lock:
+            self._maybe_reload()
+            return sorted(
+                (u, d.get("is_admin", False)) for u, d in self._users.items()
+            )
 
     def is_admin(self, username):
-        user = self._users.get(username)
-        return bool(user and user.get("is_admin"))
+        with self._lock:
+            self._maybe_reload()
+            user = self._users.get(username)
+            return bool(user and user.get("is_admin"))
 
     def count(self):
-        return len(self._users)
+        with self._lock:
+            self._maybe_reload()
+            return len(self._users)
 
     def verify(self, username, password):
-        user = self._users.get(username)
-        if not user:
-            return False
-        return check_password_hash(user.get("password_hash", ""), password)
+        with self._lock:
+            self._maybe_reload()
+            user = self._users.get(username)
+            if not user:
+                return False
+            return check_password_hash(user.get("password_hash", ""), password)
 
     def to_userinfo(self, username):
         """Booking details dict in the format booking.build_form expects."""
-        user = self._users.get(username)
-        if not user:
-            return None
+        with self._lock:
+            self._maybe_reload()
+            user = self._users.get(username)
+            if not user:
+                return None
         info = {}
         for userinfo_key, store_key in USER_INFO_KEYS.items():
             value = user.get(store_key)
